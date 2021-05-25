@@ -25,7 +25,7 @@ import (
 const (
 	dpi              = 72.0
 	textToWidthRatio = 0.1
-	paddingRatio     = 0.02
+	paddingRatio     = 0.035
 	lineSpacing      = 0.0
 	maxScaling       = 3 // maximum scaling per dimension; max size is this^2
 )
