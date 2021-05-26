@@ -8,7 +8,6 @@ import (
 	"image/draw"
 	"image/gif"
 	"io/fs"
-	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -317,12 +316,10 @@ func process(dstRect, srcRect image.Rectangle, src *gif.GIF, text *image.RGBA, o
 	if opts.CaptionPosition == Above || opts.CaptionPosition == Below {
 		imageBounds = imageBounds.Union(dstRect.Add(image.Point{0, text.Rect.Dy()}))
 	}
-	// fmt.Printf("imageBounds: {%d,%d}\n", imagebo)
 
 	if opts.CaptionPosition == Above {
 		dstRect = dstRect.Add(image.Point{0, text.Rect.Dy()})
 	}
-	// log.Println(dstRect)
 
 	var textOffset image.Point
 	switch opts.CaptionPosition {
@@ -331,7 +328,6 @@ func process(dstRect, srcRect image.Rectangle, src *gif.GIF, text *image.RGBA, o
 	case Bottom, Below:
 		textOffset.Y = imageBounds.Dy() - text.Rect.Dy()
 	}
-	log.Println(textOffset)
 
 	// var d draw.Drawer
 	output := &gif.GIF{}
