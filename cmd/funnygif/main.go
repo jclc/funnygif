@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"image/gif"
+	"image/png"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/jclc/funnygif"
 )
@@ -22,30 +24,23 @@ func main() {
 	font = flag.String("font", "", "Name of the font to use")
 	text = flag.String("text", "", "Text to insert")
 	speed = flag.Float64("speed", 1.0, "Speed multiplier (negative values = reverse)")
-	position = flag.Int("position", 0, "Caption position")
+	position = flag.Int("position", 0, "Caption/speech bubble position")
 	listFonts = flag.Bool("list-fonts", false, "List all fonts")
 	flag.Parse()
-
-	funnygif.LoadDefaultFonts(nil, 1)
 
 	if *listFonts {
 		fmt.Println(funnygif.ListFonts())
 		return
 	}
 
-	if *font == "" {
-		log.Fatalln("No font selected")
-	}
-	if *text == "" {
-		log.Fatalln("No text specified")
-	}
-	inputPath := flag.Arg(0)
+	operation := flag.Arg(0)
+	inputPath := flag.Arg(1)
 	if inputPath == "" {
 		log.Fatalln("No input image selected")
 	}
-	outputPath := flag.Arg(1)
+	outputPath := flag.Arg(2)
 	if outputPath == "" {
-		log.Fatalln("No output image specified")
+		log.Fatalln("No output specified")
 	}
 
 	f, err := os.Open(inputPath)
@@ -58,7 +53,39 @@ func main() {
 	if err != nil {
 		log.Fatalln("Error decoding gif:", err)
 	}
-	// log.Printf("Source image size: {%d, %d}\n", g.Config.Width, g.Config.Height)
+
+	var output *gif.GIF
+	switch operation {
+	case "caption":
+		output, err = caption(g)
+	case "convert":
+		convert(g, outputPath)
+		return
+	default:
+		log.Fatalln("Unknown operation", operation)
+	}
+
+	f, err = os.Create(outputPath)
+	if err != nil {
+		log.Fatalln("Error creating output file:", err)
+	}
+	defer f.Close()
+
+	err = gif.EncodeAll(f, output)
+	if err != nil {
+		log.Fatalln("Error saving output:", err)
+	}
+}
+
+func caption(g *gif.GIF) (*gif.GIF, error) {
+	funnygif.LoadDefaultFonts(nil, 1)
+
+	if *font == "" {
+		log.Fatalln("No font selected")
+	}
+	if *text == "" {
+		log.Fatalln("No text specified")
+	}
 
 	opts := &funnygif.Options{
 		Font:            *font,
@@ -70,23 +97,24 @@ func main() {
 		CropBottom:      0.2,
 		ScaleWidth:      1.5,
 		ScaleHeight:     1.5,
-		// TextColour:       color.RGBA{0xff, 0x00, 0x00, 0xff},
-		// BackgroundColour: color.RGBA{0x00, 0x00, 0xff, 0xff},
 	}
 
-	out, err := funnygif.Make(g, opts)
-	if err != nil {
+	return funnygif.MakeCaptionGIF(g, opts)
+}
+
+func convert(g *gif.GIF, outpath string) {
+	outputs := funnygif.GifToRgba(g)
+	if err := os.MkdirAll(outpath, 0755); err != nil {
 		log.Fatalln(err)
 	}
-
-	f, err = os.Create(outputPath)
-	if err != nil {
-		log.Fatalln("Error creating output file:", err)
-	}
-	defer f.Close()
-
-	err = gif.EncodeAll(f, out)
-	if err != nil {
-		log.Fatalln("Error saving output:", err)
+	for i := range outputs {
+		f, err := os.Create(filepath.Join(outpath, fmt.Sprintf("%03d.png", i)))
+		if err != nil {
+			log.Fatalln(err)
+		}
+		err = png.Encode(f, &outputs[i])
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }

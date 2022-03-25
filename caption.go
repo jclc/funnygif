@@ -61,6 +61,9 @@ func LoadFonts(searchPaths []string, maxLoaded int) error {
 
 	for _, p := range searchPaths {
 		err := filepath.Walk(p, func(path string, info fs.FileInfo, err error) error {
+			if info == nil {
+				return nil
+			}
 			if info.IsDir() || extensionRegexp.MatchString(filepath.Ext(info.Name())) {
 				return nil
 			}
@@ -155,7 +158,7 @@ type Options struct {
 	BackgroundColour color.RGBA
 }
 
-func Make(g *gif.GIF, opts *Options) (*gif.GIF, error) {
+func MakeCaptionGIF(g *gif.GIF, opts *Options) (*gif.GIF, error) {
 	if opts.Speed < 0.001 && opts.Speed > -0.001 {
 		opts.Speed = 1.0
 	}
